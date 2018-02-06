@@ -1,85 +1,48 @@
-import { Component, OnInit } from '@angular/core';
-import { Employee } from '../models/employee.model';
-import { Router } from '@angular/router';
+import { Component } from '@angular/core';
+import { Observable } from 'rxjs/Observable';
+import { CategoriesService } from '../services/northwind.service';
 
-import { PublisherService } from '../services/publishers.service'
-import { Publisher } from '../models/publisher';
-import { NgForm } from '@angular/forms'
+import { State } from '@progress/kendo-data-query';
+
+import {
+    GridDataResult,
+    DataStateChangeEvent
+} from '@progress/kendo-angular-grid';
 
 @Component({
-  selector: 'home',
-  styleUrls: ['./home.css'],
-  templateUrl: './home.html',
-  providers: [PublisherService]
+    selector: 'my-app',
+    template: `
+       <kendo-grid
+          [data]="view | async"
+          [pageSize]="state.take"
+          [skip]="state.skip"
+          [sort]="state.sort"
+          [sortable]="true"
+          [pageable]="true"
+          [scrollable]="'none'"
+          (dataStateChange)="dataStateChange($event)"
+        >
+        <kendo-grid-column field="CategoryID" width="130"></kendo-grid-column>
+        <kendo-grid-column field="CategoryName" width="200"></kendo-grid-column>
+        <kendo-grid-column field="Description" [sortable]="false">
+        </kendo-grid-column>
+      </kendo-grid>
+    `
 })
+export class Home {
+    public view: Observable<GridDataResult>;
+    public state: State = {
+        skip: 0,
+        take: 5
+    };
 
-export class Home implements OnInit {
-  languages = ['English', 'Spanish', 'Other'];
-  //model = new Employee('Darla', 'Smith');
-  model: any = {};
-  loading = false;
-  hasPrimaryLanguageError = false;
-  publishers: Publisher[] = [];
-  errorMessage: string;
+    constructor(private service: CategoriesService) {
+        this.view = service;
+        this.service.query(this.state);
+    }
 
-  constructor (
-    private router: Router,
-    private publisherService: PublisherService,
-
-  ) {
-   
-  }
-
-  getData() {
-    this.loading = true;
-    this.publisherService.create(this.model)
-        .subscribe(
-            data => {
-                this.router.navigate(['/login']);
-            },
-            error => {
-                this.loading = false;
-            });
-}
-
-
-  ngOnInit(): void {
-
-
-    this.getPublishers()
-    
-  }
-
-  getPublishers() {
-
-    this.publisherService.getAll()
-   .subscribe(publishers => {
-       this.publishers = publishers;
-       
-   },
-       error => this.errorMessage = <any>error);
-
-  } //getPublishers
-
-  //  onDelete(id: number) {
-
-  //   if (confirm('Are you sure to delete this record ? ' ) == true) {
-  //     this.publisherService.delete(id)
-  //     this.router.navigate(['/login']);
-
-  //     }
-  //   } 
-
-
-//  onSubmit(form: NgForm) {
-//     if (1 == 1) {
-//      // this.employeeService.postEmployee(form.value)
-//       this.publisherService.create(form.value)
-//         .subscribe(data => {
-//           // this.resetForm(form);
-//           //this.employeeService.getEmployeeList();
-//           //this.toastr.success('New Record Added Succcessfully', 'Employee Register');
-//         })
-//     }
-
+    public dataStateChange(state: DataStateChangeEvent): void {
+        this.state = state;
+        this.service.query(state);
+    }
 }
